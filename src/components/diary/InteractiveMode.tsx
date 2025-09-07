@@ -70,7 +70,22 @@ export function InteractiveMode({ onComplete }: InteractiveModeProps) {
 
       if (response.ok) {
         const data = await response.json()
-        onComplete(data.content, data.mood, data.tags)
+        // デフォルト値を設定して undefined を防ぐ
+        const content = data.content || data.diary || '今日の出来事を記録しました。'
+        const mood = data.mood || 'calm'
+        const tags = data.tags || ['日常', '振り返り']
+        onComplete(content, mood, tags)
+      } else {
+        // エラー時のフォールバック
+        const userContent = messages
+          .filter(msg => msg.role === 'user')
+          .map(msg => msg.content)
+          .join(' ')
+        onComplete(
+          userContent || '今日の出来事を記録しました。',
+          'calm',
+          ['日常', '振り返り']
+        )
       }
     } catch (error) {
       console.error('要約エラー:', error)

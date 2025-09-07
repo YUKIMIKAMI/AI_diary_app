@@ -112,9 +112,10 @@ export default function NewDiaryPage() {
 
   // 対話モード完了時の処理
   const handleInteractiveComplete = (newContent: string, newMood: string, newTags: string[]) => {
-    setContent(newContent)
-    setMood(newMood)
-    setTags(newTags)
+    // 値が undefined の場合のデフォルト値を設定
+    setContent(newContent || '')
+    setMood(newMood || 'calm')
+    setTags(newTags && Array.isArray(newTags) ? newTags : ['日常', '振り返り'])
     setMode('freewrite')
   }
 
