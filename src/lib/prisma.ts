@@ -1,14 +1,24 @@
-import { PrismaClient } from '@prisma/client'
-
-declare global {
-  var prisma: PrismaClient | undefined
+// Vercelデプロイ用にPrismaをオプショナルに
+let PrismaClient: any;
+try {
+  PrismaClient = require('@prisma/client').PrismaClient;
+} catch (e) {
+  // Prismaが利用できない場合（デモモード）
+  PrismaClient = null;
 }
 
-export const prisma = global.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-})
+declare global {
+  var prisma: any | undefined
+}
 
-if (process.env.NODE_ENV !== 'production') {
+// デモモードまたはPrismaが利用できない場合はnullを返す
+export const prisma = process.env.VERCEL || process.env.NODE_ENV === 'production' 
+  ? null 
+  : (global.prisma || (PrismaClient ? new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    }) : null));
+
+if (process.env.NODE_ENV !== 'production' && prisma) {
   global.prisma = prisma
 }
 

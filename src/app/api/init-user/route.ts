@@ -12,6 +12,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Vercel環境ではPrismaを使用しない
+    if (!prisma) {
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username || 'デモユーザー',
+        },
+        message: 'デモモードで実行中',
+      })
+    }
+
     // テストユーザーを作成または取得
     const dbUser = await prisma.user.upsert({
       where: { email: user.email },
