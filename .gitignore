@@ -71,3 +71,7 @@ Desktop.ini
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+/src/generated/prisma
+
+# Local data storage (development)
+/data

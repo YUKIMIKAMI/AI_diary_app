@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ユーザーテーブル
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  username       String?
+  passwordHash   String         @map("password_hash")
+  emailVerified  Boolean        @default(false) @map("email_verified")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  
+  // リレーション
+  diaryEntries   DiaryEntry[]
+  sessions       Session[]
+  loginHistory   LoginHistory[]
+  wordFrequencies WordFrequency[]
+  
+  @@map("users")
+}
+
+// セッションテーブル
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @unique @map("refresh_token")
+  deviceInfo   Json?    @map("device_info")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // リレーション
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ログイン履歴
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  loginAt   DateTime @default(now()) @map("login_at")
+  
+  // リレーション
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("login_history")
+}
+
+// 日記エントリー
+model DiaryEntry {
+  id           String         @id @default(uuid())
+  userId       Int            @map("user_id")
+  content      String         @db.Text
+  entryDate    DateTime       @default(now()) @map("entry_date")
+  mood         String?
+  tags         String[]
+  category     String?
+  emotionScore Int?           @map("emotion_score")
+  isDeleted    Boolean        @default(false) @map("is_deleted")
+  deletedAt    DateTime?      @map("deleted_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  // リレーション
+  images       Image[]
+  mindmapNodes MindmapNode[]
+  emotions     EmotionAnalysis[]
+  
+  @@index([userId, entryDate])
+  @@index([userId, createdAt])
+  @@index([mood])
+  @@index([category])
+  @@map("diary_entries")
+}
+
+// 画像テーブル
+model Image {
+  id            String     @id @default(uuid())
+  diaryEntryId  String     @map("diary_entry_id")
+  imageData     Bytes?     @map("image_data") // 画像をDB内に保存
+  imageUrl      String?    @map("image_url")   // 外部ストレージURL
+  thumbnailData Bytes?     @map("thumbnail_data")
+  mimeType      String     @map("mime_type")
+  fileSize      Int        @map("file_size")
+  width         Int?
+  height        Int?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  
+  // リレーション
+  diaryEntry    DiaryEntry @relation(fields: [diaryEntryId], references: [id], onDelete: Cascade)
+  
+  @@index([diaryEntryId])
+  @@map("images")
+}
+
+// マインドマップノード
+model MindmapNode {
+  id           String       @id @default(uuid())
+  diaryEntryId String?      @map("diary_entry_id")
+  parentNodeId String?      @map("parent_node_id")
+  nodeType     NodeType     @map("node_type")
+  content      String       @db.Text
+  positionX    Float?       @map("position_x")
+  positionY    Float?       @map("position_y")
+  isAnswered   Boolean      @default(false) @map("is_answered")
+  answeredAt   DateTime?    @map("answered_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  
+  // リレーション
+  diaryEntry   DiaryEntry?  @relation(fields: [diaryEntryId], references: [id], onDelete: Cascade)
+  parentNode   MindmapNode? @relation("NodeToNode", fields: [parentNodeId], references: [id])
+  childNodes   MindmapNode[] @relation("NodeToNode")
+  
+  @@index([diaryEntryId])
+  @@index([parentNodeId])
+  @@map("mindmap_nodes")
+}
+
+// ノードタイプ
+enum NodeType {
+  DIARY    // 日記ノード
+  QUESTION // 質問ノード
+  ANSWER   // 回答ノード
+  CATEGORY // カテゴリーノード
+  
+  @@map("node_type")
+}
+
+// 感情分析結果
+model EmotionAnalysis {
+  id           String      @id @default(uuid())
+  diaryEntryId String      @map("diary_entry_id")
+  emotionType  EmotionType @map("emotion_type")
+  score        Float
+  colorCode    String      @map("color_code")
+  analyzedAt   DateTime    @default(now()) @map("analyzed_at")
+  
+  // リレーション
+  diaryEntry   DiaryEntry  @relation(fields: [diaryEntryId], references: [id], onDelete: Cascade)
+  
+  @@index([diaryEntryId])
+  @@map("emotion_analyses")
+}
+
+// 感情タイプ
+enum EmotionType {
+  JOY         // 喜び
+  SADNESS     // 悲しみ
+  ANGER       // 怒り
+  FEAR        // 恐れ
+  SURPRISE    // 驚き
+  DISGUST     // 嫌悪
+  TRUST       // 信頼
+  ANTICIPATION // 期待
+  
+  @@map("emotion_type")
+}
+
+// 単語頻度
+model WordFrequency {
+  id         String     @id @default(uuid())
+  userId     String     @map("user_id")
+  word       String
+  frequency  Int
+  periodType PeriodType @map("period_type")
+  periodDate DateTime   @map("period_date")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  
+  // リレーション
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, word, periodType, periodDate])
+  @@index([userId, periodType, periodDate])
+  @@map("word_frequencies")
+}
+
+// 期間タイプ
+enum PeriodType {
+  DAILY
+  MONTHLY
+  YEARLY
+  
+  @@map("period_type")
+}
