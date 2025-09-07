@@ -1,31 +1,24 @@
-import { PrismaClient } from '@prisma/client'
-
-declare global {
-  var prisma: PrismaClient | undefined
-}
-
 // デモモードまたはVercel環境ではPrismaを使用しない
-const createPrismaClient = () => {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.VERCEL) {
-    return null
-  }
-  
+let prisma: any = null
+
+if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && !process.env.VERCEL) {
   try {
-    return new PrismaClient({
+    const { PrismaClient } = require('@prisma/client')
+    
+    const globalForPrisma = global as unknown as { prisma: any }
+    
+    prisma = globalForPrisma.prisma || new PrismaClient({
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     })
+    
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.prisma = prisma
+    }
   } catch (e) {
-    console.warn('Prisma Client could not be initialized:', e)
-    return null
+    console.warn('Prisma Client is not available in this environment')
+    prisma = null
   }
 }
 
-export const prisma = process.env.NODE_ENV === 'production'
-  ? createPrismaClient()
-  : (global.prisma || createPrismaClient())
-
-if (process.env.NODE_ENV !== 'production' && prisma) {
-  global.prisma = prisma as PrismaClient
-}
-
+export { prisma }
 export default prisma
