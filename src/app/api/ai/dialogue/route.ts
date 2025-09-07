@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages } = await request.json()
+    const body = await request.json()
+    const { message, messages, conversationHistory } = body
     
-    if (!messages || messages.length === 0) {
+    // 複数のパラメータ名に対応
+    const userMessage = message || (messages && messages.length > 0 ? messages[messages.length - 1] : null)
+    
+    if (!userMessage && !conversationHistory) {
       return NextResponse.json({ error: 'メッセージが必要です' }, { status: 400 })
     }
     
@@ -17,11 +21,14 @@ export async function POST(request: NextRequest) {
       '今日一日を振り返ってみて、感謝したいことはありますか？',
     ]
     
-    const responseIndex = messages.length % demoResponses.length
-    const response = demoResponses[responseIndex]
+    // 会話履歴の長さに基づいて応答を選択
+    const historyLength = conversationHistory ? conversationHistory.length : 0
+    const responseIndex = historyLength % demoResponses.length
+    const responseText = demoResponses[responseIndex]
     
     return NextResponse.json({
-      message: response,
+      message: responseText,
+      response: responseText, // 互換性のため両方のフィールドを返す
       timestamp: new Date().toISOString()
     })
   } catch (error) {
