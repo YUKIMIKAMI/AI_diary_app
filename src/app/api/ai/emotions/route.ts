@@ -1,42 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { aiService } from '@/lib/services/ai-service'
-import { wandbService } from '@/lib/wandb-service'
-import { z } from 'zod'
-
-// リクエストボディのバリデーション
-const requestSchema = z.object({
-  content: z.string().min(1, '日記の内容は必須です')
-})
 
 export async function POST(request: NextRequest) {
-  console.log('感情分析API - 開始')
-  
   try {
-    const body = await request.json()
+    const { content } = await request.json()
     
-    // バリデーション
-    const validatedData = requestSchema.parse(body)
-    console.log('リクエストデータ:', { contentLength: validatedData.content.length })
+    // デモモード用の固定感情分析結果
+    const emotions = {
+      overallScore: 0.65,
+      dominantEmotions: ['穏やか', '前向き', '好奇心'],
+      emotionScores: {
+        joy: 0.3,
+        sadness: 0.1,
+        anger: 0.05,
+        fear: 0.1,
+        surprise: 0.2,
+        love: 0.25
+      },
+      suggestions: [
+        '今日の良かったことを3つ書き出してみましょう',
+        '深呼吸をして、心を落ち着けてみてください',
+        '明日の小さな目標を1つ決めてみませんか？'
+      ]
+    }
     
-    // AI による感情分析
-    const startTime = Date.now()
-    const emotions = await aiService.analyzeEmotions(validatedData.content)
-    console.log('感情分析結果:', { 
-      overallScore: emotions.overallScore,
-      dominantEmotions: emotions.dominantEmotions 
-    })
-    
-    // W&Bに感情分析結果を記録
-    wandbService.logEmotionAnalysis(
-      emotions.overallScore,
-      emotions.dominantEmotions,
-      0.85 // デモモードなのでconfidenceは固定値
-    )
-    wandbService.logResponseTime(startTime, 'emotion-analysis')
-    
-    // キーワード抽出も同時に実行
-    const keywords = await aiService.extractKeywords(validatedData.content)
-    console.log('抽出されたキーワード:', keywords)
+    const keywords = ['日常', '振り返り', '成長', '気づき']
     
     return NextResponse.json({
       success: true,
@@ -45,18 +32,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('感情分析エラー:', error)
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'バリデーションエラー',
-          details: error.errors 
-        },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { 
         success: false,
