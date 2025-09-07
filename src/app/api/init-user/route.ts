@@ -4,6 +4,21 @@ import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    // デモモードの場合は固定ユーザーを返す
+    const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.VERCEL
+    
+    if (isDemoMode) {
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: 'demo-user-001',
+          email: 'demo@example.com',
+          username: 'デモユーザー',
+        },
+        message: 'デモモードで実行中',
+      })
+    }
+    
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(

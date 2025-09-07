@@ -24,6 +24,17 @@ export default function NewDiaryPage() {
   useEffect(() => {
     const initUser = async () => {
       try {
+        // デモモードの場合はAPIをスキップ
+        const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+        if (isDemoMode) {
+          setUser({
+            id: 'demo-user-001',
+            email: 'demo@example.com',
+            username: 'デモユーザー',
+          })
+          return
+        }
+        
         const response = await fetch('/api/init-user')
         if (response.ok) {
           const data = await response.json()
@@ -31,6 +42,12 @@ export default function NewDiaryPage() {
         }
       } catch (error) {
         console.error('ユーザー初期化エラー:', error)
+        // エラー時もデモユーザーを設定
+        setUser({
+          id: 'demo-user-001',
+          email: 'demo@example.com',
+          username: 'デモユーザー',
+        })
       }
     }
     initUser()
