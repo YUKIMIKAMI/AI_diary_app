@@ -71,6 +71,27 @@ export async function POST(request: NextRequest) {
     const validatedData = createDiarySchema.parse(body)
     console.log('Validated data:', validatedData)
 
+    // デモモードの場合はインメモリで処理
+    if (isDemoMode) {
+      const diary = {
+        id: `diary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId: user.id,
+        content: validatedData.content,
+        mood: validatedData.mood || null,
+        tags: validatedData.tags || [],
+        entryDate: validatedData.entryDate || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      console.log('Created diary (demo mode):', diary)
+      
+      return NextResponse.json({
+        success: true,
+        ...diary,
+        message: '日記を保存しました（デモモード）',
+      })
+    }
+    
     // JSON保存を使用してユーザーを作成または取得
     const dbUser = await upsertUser({
       id: user.id,
