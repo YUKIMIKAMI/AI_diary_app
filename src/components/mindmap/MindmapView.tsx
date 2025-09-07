@@ -66,6 +66,18 @@ export default function MindmapView({ diaryId }: MindmapViewProps) {
   useEffect(() => {
     const fetchDiary = async () => {
       try {
+        // まずlocalStorageから取得を試みる（デモモード対応）
+        if (typeof window !== 'undefined') {
+          const currentDiary = localStorage.getItem('currentDiary')
+          if (currentDiary) {
+            const diary = JSON.parse(currentDiary)
+            console.log('localStorageから日記を取得:', diary)
+            setDiaryContent(diary)
+            generateMindmap(diary)
+            return
+          }
+        }
+        
         // APIから取得
         const response = await fetch('/api/diary')
         if (response.ok) {

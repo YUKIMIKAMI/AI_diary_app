@@ -71,6 +71,19 @@ export default function NewDiaryPage() {
       if (response.ok) {
         const data = await response.json()
         clearDraft()
+        // デモモードではlocalStorageに保存してからリダイレクト
+        if (typeof window !== 'undefined') {
+          const existingDiaries = JSON.parse(localStorage.getItem('diaries') || '[]')
+          const newDiary = {
+            ...data,
+            content,
+            mood,
+            tags,
+            createdAt: new Date().toISOString()
+          }
+          localStorage.setItem('diaries', JSON.stringify([...existingDiaries, newDiary]))
+          localStorage.setItem('currentDiary', JSON.stringify(newDiary))
+        }
         router.push(`/mindmap?diaryId=${data.id}`)
       }
     } catch (error) {

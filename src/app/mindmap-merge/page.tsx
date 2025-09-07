@@ -80,6 +80,17 @@ function MindmapMergeContent() {
 
   const fetchDiaries = async () => {
     try {
+      // まずlocalStorageから取得を試みる（デモモード対応）
+      if (typeof window !== 'undefined') {
+        const storedDiaries = localStorage.getItem('diaries')
+        if (storedDiaries) {
+          const diaries = JSON.parse(storedDiaries)
+          console.log('localStorageから日記を取得:', diaries)
+          setDiaries(diaries)
+          return
+        }
+      }
+      
       const response = await fetch('/api/diary')
       if (response.ok) {
         const data = await response.json()
