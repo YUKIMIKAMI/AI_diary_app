@@ -2,12 +2,12 @@
 // TODO: TICKET-013で本格的な認証システムを実装
 
 export async function getCurrentUser() {
-  // 開発環境では固定のテストユーザーを返す
-  if (process.env.NODE_ENV === 'development') {
+  // デモモードまたは開発環境では固定のテストユーザーを返す
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'development') {
     return {
-      id: 'test-user-001',
-      email: 'test@example.com',
-      username: 'テストユーザー',
+      id: 'demo-user-001',
+      email: 'demo@example.com',
+      username: 'デモユーザー',
     }
   }
   
